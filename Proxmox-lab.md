@@ -11,3 +11,6 @@ Steg 1:
 - Recomenation image from ubuntu: (Link:https://cloud-images.ubuntu.com/focal/)
 - We should have a ISO image in proxmox,for create the VM on proxmoxyou have to run this cimmand below:
 wget https://ftp.lysator.liu.se/ubuntu-releases/20.04.4/ubuntu-20.04.4-live-server-amd64.iso
+-For delet a VM on proxmox we have to use this command: 
+>> cat /etc/pve/.vmlist  #List of all VM
+>> destroy VM-id  # delete VM
