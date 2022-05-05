@@ -13,4 +13,4 @@ Steg 1:
 wget https://ftp.lysator.liu.se/ubuntu-releases/20.04.4/ubuntu-20.04.4-live-server-amd64.iso
 -For delet a VM on proxmox we have to use this command: 
 >> cat /etc/pve/.vmlist  #List of all VM
->> destroy VM-id  # delete VM
+>> qm destroy VM-id  # delete VM
