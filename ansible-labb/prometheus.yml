@@ -1,0 +1,88 @@
+---
+- name: Prometheus Playbook
+  hosts: monitoring
+  become: true
+  tasks:
+    - name: Set hostname
+      ansible.builtin.hostname:
+        name: prometheus-server
+        use: systemd
+
+    - name: Update system
+      ansible.builtin.apt:
+        update_cache: true
+        name: '*'
+        state: latest
+
+    - name: Create user
+      ansible.builtin.user:
+        name: lura
+        comment: Created by Ansible
+        uid: 2000
+        password: $6$lFeVzXxmwI1lzYF3$TxTMMw02ceYXfvT7ayJ1RUjOa4iqIGASc98fu/VsklnngwbWkgOUYsFnlR1wv7Gk1S0cAFYAVkc5VyE4qdYU41
+        state: present
+
+    - name: Install firewall
+      ansible.builtin.apt:
+        name: ufw
+        state: present
+
+    - name: Open ssh port in firewall
+      community.general.ufw:
+        rule: allow
+        port: ssh
+        proto: tcp
+        direction: in
+
+    - name: Open prometheus port in firewall
+      community.general.ufw:
+        rule: allow
+        port: 9090
+        proto: tcp
+        direction: in
+
+    - name: Open Grafana port in firewall
+      community.general.ufw:
+        rule: allow
+        port: 3000
+        proto: tcp
+        direction: in
+
+    - name: Enable firewall and set default policy
+      community.general.ufw:
+        state: enabled
+        default: deny
+        direction: incoming
+
+    - name: Download prometheus executable
+      ansible.builtin.get_url:
+        url: https://github.com/prometheus/prometheus/releases/download/v2.35.0/prometheus-2.35.0.linux-amd64.tar.gz
+        dest: /home/vagrant/
+
+    - name: Extract prometheus
+      ansible.builtin.unarchive:
+        src: prometheus-2.35.0.linux-amd64.tar.gz
+        dest: /home/vagrant/
+        remote_src: true
+
+    - name: Download grafana binary
+      ansible.builtin.get_url:
+        url: https://dl.grafana.com/oss/release/grafana-8.5.2.linux-amd64.tar.gz
+        dest: /home/vagrant/
+
+    - name: Extract Grafana
+      ansible.builtin.unarchive:
+        src: grafana-8.5.2.linux-amd64.tar.gz
+        dest: /home/vagrant/
+        remote_src: true
+
+    - name: Download prometheus node exporter
+      ansible.builtin.get_url:
+        url: https://github.com/prometheus/node_exporter/releases/download/v1.3.1/node_exporter-1.3.1.linux-amd64.tar.gz
+        dest: /home/vagrant/
+
+    - name: Extract node exporter
+      ansible.builtin.unarchive:
+        src: node_exporter-1.3.1.linux-amd64.tar.gz
+        dest: /home/vagrant/
+        remote_src: true
