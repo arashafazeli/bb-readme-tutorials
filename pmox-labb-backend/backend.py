@@ -11,6 +11,7 @@ REQUEST_TIME = Summary("test_summary_request_time", "Time spent processing reque
 REQUEST_COUNTER = Counter("test_counter_requests", "Total requests", ["endpoint", "method"])
 
 app = Flask(__name__)
+# ==================== Cross Origin Resource Sharing (CORS), making cross-origin AJAX possible ====================
 CORS(app)
 
 
