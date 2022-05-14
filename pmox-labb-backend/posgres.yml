@@ -1,0 +1,10 @@
+services:
+  db:
+    image: postgres:latest
+    ports:
+      - 127.0.0.1:5432:5432/tcp
+    environment:
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - ./db_data:/var/lib/postgresql/data
+      - ./shared_data:/shared_data
