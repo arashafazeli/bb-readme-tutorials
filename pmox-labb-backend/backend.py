@@ -35,7 +35,18 @@ class Message(db.Model):
     submitted = db.Column(db.TIMESTAMP)
 
 
-# ==================== self.submitted i a datestamp Coordinated Universal Time now ====================
+# ==================== self.submitted i a datestamp Coordinated Universal Time  ====================
+    def as_dict(self):
+        return {
+        "id": self.id,
+        "author": self.author,
+        "title":self.title,
+        "text": self.text,
+        "submitted": self.submitted,
+            
+        }
+    
+    
     def __init__(self, author, title, text):
         self.author, self.title, self.text = author, title, text
         self.submitted = datetime.utcnow()
