@@ -1,0 +1,181 @@
+version: 16
+jobs:
+- name: Install dependencies
+  jobExecutor: localhost-docker
+  steps:
+  - !CheckoutStep
+    name: checkout code
+    cloneCredential: !DefaultCredential {}
+    withLfs: false
+    withSubmodules: false
+    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+  - !CommandStep
+    name: Create virtualenv and install dependencies
+    runInContainer: true
+    image: python:3.10
+    interpreter: !DefaultInterpreter
+      commands:
+      - python -m venv venv
+      - . venv/bin/activate
+      - pip install -r requirements.txt
+    useTTY: false
+    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+  triggers:
+  - !BranchUpdateTrigger {}
+  retryCondition: never
+  maxRetries: 3
+  retryDelay: 30
+  cpuRequirement: 250
+  memoryRequirement: 256
+  caches:
+  - key: virtualenv
+    path: ./venv
+  timeout: 3600
+- name: PEP8
+  jobExecutor: localhost-docker
+  steps:
+  - !CheckoutStep
+    name: checkout code
+    cloneCredential: !DefaultCredential {}
+    withLfs: false
+    withSubmodules: false
+    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+  - !CommandStep
+    name: check autopep8
+    runInContainer: true
+    image: python:3.10
+    interpreter: !DefaultInterpreter
+      commands:
+      - . venv/bin/activate
+      - pip install -r requirements_dev.txt
+      - python -m autopep8 --exit-code src/*.py
+      - exit $?
+    useTTY: false
+    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+  triggers:
+  - !BranchUpdateTrigger {}
+  jobDependencies:
+  - jobName: Install dependencies
+    requireSuccessful: true
+  retryCondition: never
+  maxRetries: 3
+  retryDelay: 30
+  cpuRequirement: 250
+  memoryRequirement: 256
+  caches:
+  - key: virtualenv
+    path: ./venv
+  timeout: 3600
+  postBuildActions:
+  - !RunJobAction
+    condition: failed
+    jobName: autoPEP8
+- name: Lint
+  jobExecutor: localhost-docker
+  steps:
+  - !CheckoutStep
+    name: checkout code
+    cloneCredential: !DefaultCredential {}
+    withLfs: false
+    withSubmodules: false
+    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+  - !CommandStep
+    name: pylint
+    runInContainer: true
+    image: python:3.10
+    interpreter: !DefaultInterpreter
+      commands:
+      - . venv/bin/activate
+      - pip install -r requirements_dev.txt
+      - pylint src/*.py
+      - exit $?
+    useTTY: false
+    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+  triggers:
+  - !BranchUpdateTrigger {}
+  jobDependencies:
+  - jobName: Install dependencies
+    requireSuccessful: true
+  retryCondition: never
+  maxRetries: 3
+  retryDelay: 30
+  cpuRequirement: 250
+  memoryRequirement: 256
+  caches:
+  - key: virtualenv
+    path: ./venv
+  timeout: 3600
+- name: autoPEP8
+  jobExecutor: localhost-docker
+  steps:
+  - !CheckoutStep
+    name: checkout code
+    cloneCredential: !HttpCredential
+      accessTokenSecret: onedev-token
+    withLfs: false
+    withSubmodules: false
+    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+  - !CommandStep
+    name: autopep8
+    runInContainer: true
+    image: python:3.10
+    interpreter: !DefaultInterpreter
+      commands:
+      - . venv/bin/activate
+      - pip install -r requirements_dev.txt
+      - autopep8 -i src/*.py
+    useTTY: false
+    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+  - !CommandStep
+    name: commit and push
+    runInContainer: true
+    image: alpine/git
+    interpreter: !DefaultInterpreter
+      commands:
+      - git config --global user.name "admin"
+      - git config --global user.email "admin@@admin.admin"
+      - ''
+      - '# Fetch and checkout master as OneDev by default clones '
+      - '# code up to current commit'
+      - git fetch origin master:master
+      - git checkout master
+      - ''
+      - git add -A
+      - 'git commit -m "OneDev: autopep8 applied"'
+      - git push origin master:master
+    useTTY: false
+    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+  retryCondition: never
+  maxRetries: 3
+  retryDelay: 30
+  cpuRequirement: 250
+  memoryRequirement: 256
+  caches:
+  - key: virtualenv
+    path: ./venv
+  timeout: 3600
+- name: Build
+  jobExecutor: localhost-docker
+  steps:
+  - !CheckoutStep
+    name: checkout code
+    cloneCredential: !DefaultCredential {}
+    withLfs: false
+    withSubmodules: false
+    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+  triggers:
+  - !BranchUpdateTrigger
+    branches: master
+  jobDependencies:
+  - jobName: PEP8
+    requireSuccessful: true
+    artifacts: '**'
+  - jobName: Lint
+    requireSuccessful: true
+    artifacts: '**'
+  retryCondition: never
+  maxRetries: 3
+  retryDelay: 30
+  cpuRequirement: 250
+  memoryRequirement: 256
+  timeout: 3600
